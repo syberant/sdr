@@ -14,6 +14,7 @@ const DEFAULT_TEXT: &str = "\x1b[0m";
 enum Action {
     Run,
     Help,
+    // TODO: Maybe merge this one into the functionality of the `--edit` flag?
     New,
     Edit,
     Cat,
@@ -133,6 +134,13 @@ fn main() -> Result<(), MyError> {
         Action::Run => {
             if target.metadata().is_dir() {
                 target.directory_help()?;
+
+                if let Some(nonexistent) = args.peek() {
+                    eprintln!(
+                        "\n`{}` doesn't exist, try creating it with the --new flag",
+                        nonexistent.to_string_lossy()
+                    );
+                }
                 Ok(())
             } else {
                 let err: MyError = target.exec(args).into();
