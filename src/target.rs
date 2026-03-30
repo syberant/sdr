@@ -26,7 +26,8 @@ impl Target {
         let err = std::process::Command::new("cat").arg(&self.0).exec();
 
         Err(err).context(format!(
-            "Failed to execute `cat` binary with argument {self}"
+            "Failed to execute `cat` binary with argument {}",
+            self.0.display()
         ))
     }
 
@@ -35,7 +36,7 @@ impl Target {
 
         let err = std::process::Command::new(editor).arg(&self.0).exec();
 
-        Err(err).context(format!("Failed to edit {self}"))
+        Err(err).context(format!("Failed to edit {}", self.0.display()))
     }
 
     pub fn help(&self) -> Result<(), MyError> {
