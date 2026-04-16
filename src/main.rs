@@ -19,6 +19,8 @@ enum Action {
     Edit,
     Cat,
     Which,
+    /// Try to autocomplete from the given arguments.
+    Complete,
 }
 
 fn get_root() -> Result<PathBuf, MyError> {
@@ -126,6 +128,7 @@ fn main() -> Result<(), MyError> {
         Some("--edit") => Action::Edit,
         Some("--cat") => Action::Cat,
         Some("--which") => Action::Which,
+        Some("--completion") => Action::Complete,
         // Some("--") => // TODO: Pass all other arguments through to script? Replaces the functionality of `--really`
         None | Some(_) => Action::Run,
     };
@@ -158,5 +161,9 @@ fn main() -> Result<(), MyError> {
 
         // TODO
         Action::New => unimplemented!(),
+        Action::Complete => {
+            println!("{}", include_str!("../completion.sh"));
+            Ok(())
+        }
     }
 }
