@@ -75,6 +75,10 @@ impl Target {
             .max()
             .unwrap_or(0);
 
+        fn buf_read_line(buf: impl std::io::BufRead) -> Option<String> {
+            buf.lines().flat_map(|l| l.ok()).next()
+        }
+
         for dentry in dentries {
             let name = dentry.file_name();
             let name = name.to_string_lossy();
@@ -82,17 +86,22 @@ impl Target {
             let metadata = dentry.metadata()?;
             let ft = metadata.file_type();
 
+            let mut help_text = get_help_file(dentry.path()).and_then(buf_read_line);
             if ft.is_dir() {
-                println!("{BLUE_TEXT}{0:max_length$}{DEFAULT_TEXT}", name);
-            } else if ft.is_file() {
-                let help_text = parse_help_line(dentry.path())?;
+                print!("{BLUE_TEXT}{name:max_length$}{DEFAULT_TEXT}");
+            } else {
+                help_text = help_text.or_else(|| parse_help_line(dentry.path()));
 
                 print!("{name:max_length$}");
-                if !help_text.is_empty() {
-                    print!(" -- {help_text}")
-                }
-                println!("");
             }
+
+            // Print any potential help text
+            if let Some(help_text) = help_text
+                && !help_text.is_empty()
+            {
+                print!(" -- {help_text}")
+            }
+            println!("");
         }
 
         Ok(())

@@ -45,12 +45,27 @@ fn get_editor() -> OsString {
     std::env::var_os("EDITOR").unwrap_or(OsString::from("vi"))
 }
 
-fn parse_help_line<P: AsRef<std::path::Path>>(path: P) -> Result<String, MyError> {
+fn get_help_file<P: AsRef<std::path::Path>>(path: P) -> Option<impl std::io::BufRead> {
+    let path = path.as_ref();
+
+    let help_file = if path.is_dir() {
+        // Only works for directories
+        path.join("help")
+    } else {
+        path.with_added_extension(".help")
+    };
+
+    // Read help file
+    let f = std::fs::File::open(help_file).ok()?;
+    Some(std::io::BufReader::new(f))
+}
+
+fn parse_help_line<P: AsRef<std::path::Path>>(path: P) -> Option<String> {
     use std::io::Read;
 
-    let mut f = std::fs::File::open(path)?;
+    let mut f = std::fs::File::open(path).ok()?;
     let mut buf = [0u8; 1000];
-    let read = f.read(&mut buf)?;
+    let read = f.read(&mut buf).ok()?;
     let buf = &buf[..read];
     let s = std::str::from_utf8(buf).unwrap_or("");
 
@@ -67,7 +82,7 @@ fn parse_help_line<P: AsRef<std::path::Path>>(path: P) -> Result<String, MyError
         .trim_start()
         .to_string();
 
-    Ok(help_text)
+    Some(help_text)
 }
 
 fn parse_help_all<P: AsRef<std::path::Path>>(path: P) -> Result<String, MyError> {
