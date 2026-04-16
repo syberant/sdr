@@ -122,14 +122,21 @@ fn main() -> Result<(), MyError> {
     let (target, args) = parse_target()?;
 
     let mut args = args.peekable();
-    let action = match args.peek().and_then(|s| s.to_str()) {
-        Some("--help") => Action::Help,
-        Some("--new") => Action::New,
-        Some("--edit") => Action::Edit,
-        Some("--cat") => Action::Cat,
-        Some("--which") => Action::Which,
-        Some("--completion") => Action::Complete,
-        // Some("--") => // TODO: Pass all other arguments through to script? Replaces the functionality of `--really`
+
+    let action = match args.peek().map(|s| s.as_encoded_bytes()) {
+        Some(b"--help") => Action::Help,
+        Some(b"--new") => Action::New,
+        Some(b"--edit") => Action::Edit,
+        Some(b"--cat") => Action::Cat,
+        Some(b"--which") => Action::Which,
+        Some(b"--completion") => Action::Complete,
+
+        Some(b"--") => {
+            // Passes all other arguments through to script.
+            // Replaces the functionality of `--really`
+            args.next();
+            Action::Run
+        }
         None | Some(_) => Action::Run,
     };
 
