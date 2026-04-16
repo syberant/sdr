@@ -1,10 +1,13 @@
 // TODO: Support sidecar help files
 
 use anyhow::Context;
+use std::fs::Metadata;
+use std::os::unix::process::CommandExt;
 use std::path::PathBuf;
-use std::{fs::Metadata, os::unix::process::CommandExt};
+use std::process::Command;
 
-use super::{BLUE_TEXT, DEFAULT_TEXT, MyError};
+// I don't normally import everything but for such a small utility it's fine.
+use super::*;
 
 pub struct Target(PathBuf, Metadata);
 
@@ -23,7 +26,7 @@ impl Target {
 
 impl Target {
     pub fn cat(&self) -> Result<(), MyError> {
-        let err = std::process::Command::new("cat").arg(&self.0).exec();
+        let err = Command::new("cat").arg(&self.0).exec();
 
         Err(err).context(format!(
             "Failed to execute `cat` binary with argument {}",
@@ -31,10 +34,10 @@ impl Target {
         ))
     }
 
-    pub fn edit(&self) -> Result<(), MyError> {
-        let editor = super::get_editor();
 
-        let err = std::process::Command::new(editor).arg(&self.0).exec();
+    pub fn edit(&self) -> Result<(), MyError> {
+        let editor = get_editor();
+        let err = Command::new(editor).arg(&self.0).exec();
 
         Err(err).context(format!("Failed to edit {}", self.0.display()))
     }
@@ -43,7 +46,7 @@ impl Target {
         if self.1.is_dir() {
             self.directory_help()
         } else {
-            let help_text = super::parse_help_all(&self.0)?;
+            let help_text = parse_help_all(&self.0)?;
             let help_text = help_text.trim_end();
 
             println!("{}", help_text);
@@ -52,7 +55,6 @@ impl Target {
         }
     }
 
-    // TODO: Cleanup
     pub fn directory_help(&self) -> Result<(), MyError> {
         println!(
             "{} commands\n",
@@ -62,14 +64,10 @@ impl Target {
                 .to_string_lossy()
         );
 
-        let dentries = {
-            let dentries = std::fs::read_dir(&self.0)?.filter_map(|d| d.ok());
-
-            // Sort alphabetically by filename
-            let mut dentries = dentries.collect::<Vec<_>>();
-            dentries.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
-            dentries
-        };
+        let mut dentries: Vec<_> = std::fs::read_dir(&self.0)?.filter_map(|d| d.ok()).collect();
+        // Sort alphabetically by filename
+        dentries.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+        let dentries = dentries;
 
         let max_length = dentries
             .iter()
@@ -87,7 +85,7 @@ impl Target {
             if ft.is_dir() {
                 println!("{BLUE_TEXT}{0:max_length$}{DEFAULT_TEXT}", name);
             } else if ft.is_file() {
-                let help_text = super::parse_help_line(dentry.path())?;
+                let help_text = parse_help_line(dentry.path())?;
 
                 print!("{name:max_length$}");
                 if !help_text.is_empty() {
@@ -106,8 +104,7 @@ impl Target {
         I: IntoIterator<Item = S>,
         S: AsRef<std::ffi::OsStr>,
     {
-        use std::os::unix::process::CommandExt;
-        std::process::Command::new(&self.0).args(args).exec()
+        Command::new(&self.0).args(args).exec()
     }
 }
 
