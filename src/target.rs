@@ -85,14 +85,15 @@ impl Target {
             let ft = metadata.file_type();
 
             if ft.is_dir() {
-                println!(
-                    "{BLUE_TEXT}{0:max_length$}{DEFAULT_TEXT} -- {0} commands",
-                    name,
-                );
+                println!("{BLUE_TEXT}{0:max_length$}{DEFAULT_TEXT}", name);
             } else if ft.is_file() {
                 let help_text = super::parse_help_line(dentry.path())?;
 
-                println!("{name:max_length$} -- {help_text}");
+                print!("{name:max_length$}");
+                if !help_text.is_empty() {
+                    print!(" -- {help_text}")
+                }
+                println!("");
             }
         }
 
