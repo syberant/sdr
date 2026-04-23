@@ -120,7 +120,15 @@ impl Target {
         I: IntoIterator<Item = S>,
         S: AsRef<std::ffi::OsStr>,
     {
-        Command::new(&self.0).args(args).exec()
+        let mut cmd = Command::new(&self.0);
+        cmd.args(args);
+
+        // Log exact command we're calling to stderr
+        if std::env::var_os("RUST_LOG").is_some() {
+            eprintln!("{BRIGHT_YELLOW_TEXT}Running{DEFAULT_TEXT}: {:?}", cmd);
+        }
+
+        cmd.exec()
     }
 }
 

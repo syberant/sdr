@@ -8,6 +8,7 @@ use anyhow::Context;
 type MyError = anyhow::Error;
 
 const BLUE_TEXT: &str = "\x1b[34m";
+const BRIGHT_YELLOW_TEXT: &str = "\x1b[93m";
 const DEFAULT_TEXT: &str = "\x1b[0m";
 
 /// The action we are supposed to carry out.
