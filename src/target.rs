@@ -1,5 +1,3 @@
-// TODO: Support sidecar help files
-
 use anyhow::Context;
 use std::fs::Metadata;
 use std::os::unix::process::CommandExt;
@@ -43,13 +41,22 @@ impl Target {
     }
 
     pub fn help(&self) -> Result<(), MyError> {
+        fn buf_read_all(mut buf: impl std::io::BufRead) -> Option<String> {
+            let mut s = String::new();
+            buf.read_to_string(&mut s).ok()?;
+            Some(s)
+        }
+
         if self.1.is_dir() {
             self.directory_help()
         } else {
-            let help_text = parse_help_all(&self.0)?;
-            let help_text = help_text.trim_end();
+            let help_text = get_help_file(&self.0)
+                .and_then(buf_read_all)
+                .or_else(|| parse_help_all(&self.0).ok())
+                .unwrap_or("No help provided".to_string());
 
-            println!("{}", help_text);
+            // TODO: Use std::io::copy instead to reduce memory use.
+            println!("{}", help_text.trim_end());
 
             Ok(())
         }
