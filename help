@@ -1,0 +1,37 @@
+sd - script directory
+
+sd some path to a script
+	Executes the script located at ~/sd/some/path/to/a/script
+
+sd some path to a script --input a.cpp --output b.cpp
+	Executes `~/sd/some/path/to/a/script --input a.cpp --output b.cpp`
+
+sd some path to a script -- --help and stuff
+	Executes `~/sd/some/path/to/a/script --help and stuff`
+
+sd some path to a script with plain arguments
+	Executes `~/sd/some/path/to/a/script with plain arguments`
+	`sd` figures out the difference between path and argument
+	simply by traversing the filesystem.
+
+
+sd some path --help
+	Display help text associated with that script or directory.
+	In case of a directory it will also give an overview of its contents.
+
+sd path to a script --edit
+	Opens the script with $SD_EDITOR, $VISUAL, $EDITOR or `vi` as a fallback.
+
+sd path to a script --new
+	Creates a new file and opens it for editing.
+	In case it already exists behaviour will be equivalent to --edit.
+
+sd path to a script --cat
+	Prints the content of the script to stdout, analagous to the `cat` program.
+
+sd some path --which
+	Prints the full and canonicalized path to this script or directory.
+
+sd --completion-bash
+	Prints a completion script for bash, example usage:
+	eval "$(sd --completion-bash)"

@@ -120,8 +120,15 @@ fn main() -> Result<(), MyError> {
     let mut args = args.peekable();
 
     let action = match args.peek().map(|s| s.as_encoded_bytes()) {
-        // TODO: Provide different help text for `sd --help` explaining all these flags.
-        Some(b"--help") => Action::Help,
+        Some(b"--help") => {
+            // Provide different help text for `sd --help` explaining usage of script directory in general.
+            if std::env::args_os().count() <= 2 {
+                print!("{}", include_str!("../help"));
+                return Ok(());
+            }
+
+            Action::Help
+        }
         Some(b"--edit") => Action::Edit,
         Some(b"--cat") => Action::Cat,
         Some(b"--which") => Action::Which,
