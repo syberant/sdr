@@ -2,6 +2,12 @@
 name = "sdr"
 version = "0.1.0"
 edition = "2024"
+description = "Organises and runs all your (oneliner) shellscripts"
+license = "EUPL-1.2"
+repository = "https://github.com/syberant/sdr"
+readme="README.md"
+keywords = ["cli"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow = "1.0.100"
