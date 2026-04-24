@@ -144,7 +144,7 @@ fn main() -> Result<(), MyError> {
         Some(b"--edit") => Action::Edit,
         Some(b"--cat") => Action::Cat,
         Some(b"--which") => Action::Which,
-        Some(b"--completion") => Action::Complete,
+        Some(b"--completion-bash") => Action::Complete,
 
         Some(b"--") => {
             // Passes all other arguments through to script.
