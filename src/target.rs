@@ -30,12 +30,10 @@ impl AsRef<std::path::Path> for Target {
 
 impl Target {
     pub fn cat(&self) -> Result<(), MyError> {
-        let err = Command::new("cat").arg(&self.0).exec();
+        let mut f = std::fs::File::open(&self.0)?;
+        std::io::copy(&mut f, &mut std::io::stdout().lock())?;
 
-        Err(err).context(format!(
-            "Failed to execute `cat` binary with argument {}",
-            self.0.display()
-        ))
+        Ok(())
     }
 
     pub fn create_new(&self, extra_path: impl AsRef<std::path::Path>) -> Result<(), MyError> {
@@ -57,7 +55,7 @@ impl Target {
                 file.set_permissions(perms)?;
             }
             Err(e) => match e.kind() {
-                // It already existed, this is usually the case and we don't have to do anything
+                // It already existed, we don't have to do anything
                 std::io::ErrorKind::AlreadyExists => {}
                 _ => {
                     return Err(e)

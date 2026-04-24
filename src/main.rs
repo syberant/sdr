@@ -36,14 +36,10 @@ fn get_root() -> Result<PathBuf, MyError> {
 }
 
 fn get_editor() -> OsString {
-    if let Some(s) = std::env::var_os("SD_EDITOR") {
-        return s;
-    }
-    if let Some(s) = std::env::var_os("VISUAL") {
-        return s;
-    }
-
-    std::env::var_os("EDITOR").unwrap_or(OsString::from("vi"))
+    std::env::var_os("SD_EDITOR")
+        .or_else(|| std::env::var_os("VISUAL"))
+        .or_else(|| std::env::var_os("EDITOR"))
+        .unwrap_or(OsString::from("vi"))
 }
 
 fn get_help_file<P: AsRef<std::path::Path>>(path: P) -> Option<impl std::io::BufRead> {
