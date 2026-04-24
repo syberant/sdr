@@ -11,3 +11,7 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow = "1.0.100"
+
+[[bin]]
+name = "sd"
+path = "src/main.rs"
