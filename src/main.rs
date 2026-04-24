@@ -61,51 +61,35 @@ fn get_help_file<P: AsRef<std::path::Path>>(path: P) -> Option<impl std::io::Buf
     Some(std::io::BufReader::new(f))
 }
 
-fn parse_help_line<P: AsRef<std::path::Path>>(path: P) -> Option<String> {
-    use std::io::Read;
+fn parse_help<P: AsRef<std::path::Path>>(path: P) -> Option<impl Iterator<Item = String>> {
+    use std::io::BufRead;
 
-    let mut f = std::fs::File::open(path).ok()?;
-    let mut buf = [0u8; 1000];
-    let read = f.read(&mut buf).ok()?;
-    let buf = &buf[..read];
-    let s = std::str::from_utf8(buf).unwrap_or("");
+    let f = std::fs::File::open(path).ok()?;
+    let f = std::io::BufReader::new(f);
 
-    let help_text = s
+    let help_text = f
         .lines()
-        // Skip the `#!` (binfmt) line
-        .skip(1)
-        // Skip non-comment lines and pick the first one
-        .skip_while(|line| line.chars().next() != Some('#'))
-        .next()
-        // Remove the `#` and whitespace that follows it.
-        .and_then(|line| line.get(1..))
-        .unwrap_or("")
-        .trim_start()
-        .to_string();
-
-    Some(help_text)
-}
-
-fn parse_help_all<P: AsRef<std::path::Path>>(path: P) -> Result<String, MyError> {
-    use std::io::Read;
-
-    let mut f = std::fs::File::open(path)?;
-    let mut s = String::new();
-    f.read_to_string(&mut s)?;
-
-    let help_text = s
-        .split_inclusive('\n')
+        // Stop processing lines after the first error
+        .take_while(|l| l.is_ok())
+        .map(|l| l.expect("This should be impossible, please submit a bug report."))
         // Skip the `#!` (binfmt) line
         .skip(1)
         // Skip non-comment lines and pick the first contiguous block of comments
         .skip_while(|line| line.chars().next() != Some('#'))
+        // Take only the first block of comments
         .take_while(|line| line.chars().next() == Some('#'))
         .map(|line| {
             // Remove the `#` and whitespace that follows it.
-            line.get(1..).unwrap_or("").trim_start()
+            line.get(1..).unwrap_or("").trim_start().to_string()
         });
 
-    Ok(help_text.collect())
+    // Return `None` if our iterator is empty
+    let mut help_text = help_text.peekable();
+    if help_text.peek().is_none() {
+        None
+    } else {
+        Some(help_text)
+    }
 }
 
 fn parse_target() -> Result<(Target, impl Iterator<Item = OsString>), MyError> {
@@ -172,7 +156,7 @@ fn main() -> Result<(), MyError> {
                     }
                 }
 
-                target.directory_help()?;
+                target.help()?;
 
                 Ok(())
             } else {

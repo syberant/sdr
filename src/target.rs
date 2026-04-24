@@ -79,74 +79,74 @@ impl Target {
     }
 
     pub fn help(&self) -> Result<(), MyError> {
-        fn buf_read_all(mut buf: impl std::io::BufRead) -> Option<String> {
-            let mut s = String::new();
-            buf.read_to_string(&mut s).ok()?;
-            Some(s)
-        }
-
-        if self.1.is_dir() {
-            self.directory_help()
-        } else {
-            let help_text = get_help_file(&self.0)
-                .and_then(buf_read_all)
-                .or_else(|| parse_help_all(&self.0).ok())
-                .unwrap_or("No help provided".to_string());
-
-            // TODO: Use std::io::copy instead to reduce memory use.
-            println!("{}", help_text.trim_end());
-
-            Ok(())
-        }
-    }
-
-    pub fn directory_help(&self) -> Result<(), MyError> {
-        println!(
-            "{} commands\n",
-            self.0
-                .file_name()
-                .expect("Should be impossible given that we canonicalized the path before. Please report this as a bug.")
-                .to_string_lossy()
-        );
-
-        let mut dentries: Vec<_> = std::fs::read_dir(&self.0)?.filter_map(|d| d.ok()).collect();
-        // Sort alphabetically by filename
-        dentries.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
-        let dentries = dentries;
-
-        let max_length = dentries
-            .iter()
-            .map(|d| d.file_name().to_string_lossy().chars().count())
-            .max()
-            .unwrap_or(0);
-
-        fn buf_read_line(buf: impl std::io::BufRead) -> Option<String> {
-            buf.lines().flat_map(|l| l.ok()).next()
-        }
-
-        for dentry in dentries {
-            let name = dentry.file_name();
-            let name = name.to_string_lossy();
-
-            let metadata = dentry.metadata()?;
-            let ft = metadata.file_type();
-
-            let mut help_text = get_help_file(dentry.path()).and_then(buf_read_line);
-            if ft.is_dir() {
-                print!("{BLUE_TEXT}{name:max_length$}{DEFAULT_TEXT}");
-            } else {
-                help_text = help_text.or_else(|| parse_help_line(dentry.path()));
-
-                print!("{name:max_length$}");
-            }
-
-            // Print any potential help text
-            if let Some(help_text) = help_text
-                && !help_text.is_empty()
-            {
-                print!(" -- {help_text}")
-            }
+        let help_file = if let Some(mut h) = get_help_file(self) {
+            // Use std::io::copy to reduce memory use.
+            std::io::copy(&mut h, &mut std::io::stdout().lock())?;
             println!("");
+            true
+        } else {
+            false
+        };
+
+        if !self.1.is_dir() {
+            if !help_file {
+                let help_text = parse_help(&self.0)
+                    .map(|it| {
+                        it.map(|mut l| {
+                            l.push('\n');
+                            l
+                        })
+                        .collect()
+                    })
+                    .unwrap_or("No help provided\n".to_string());
+
+                println!("{}", help_text.trim_end());
+            }
+        } else {
+            if !help_file {
+                println!("{} commands\n", self.0.file_name().expect("Should be impossible given that we canonicalized the path before. Please report this as a bug.").to_string_lossy());
+            }
+
+            let mut dentries: Vec<_> = std::fs::read_dir(&self.0)?.filter_map(|d| d.ok()).collect();
+            // Sort alphabetically by filename
+            dentries.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+            let dentries = dentries;
+
+            let max_length = dentries
+                .iter()
+                .map(|d| d.file_name().to_string_lossy().chars().count())
+                .max()
+                .unwrap_or(0);
+
+            fn buf_read_line(buf: impl std::io::BufRead) -> Option<String> {
+                buf.lines().flat_map(|l| l.ok()).next()
+            }
+
+            for dentry in dentries {
+                let name = dentry.file_name();
+                let name = name.to_string_lossy();
+
+                let metadata = dentry.metadata()?;
+                let ft = metadata.file_type();
+
+                let mut help_text = get_help_file(dentry.path()).and_then(buf_read_line);
+                if ft.is_dir() {
+                    print!("{BLUE_TEXT}{name:max_length$}{DEFAULT_TEXT}");
+                } else {
+                    help_text = help_text
+                        .or_else(|| parse_help(dentry.path()).and_then(|mut it| it.next()));
+
+                    print!("{name:max_length$}");
+                }
+
+                // Print any potential help text
+                if let Some(help_text) = help_text
+                    && !help_text.is_empty()
+                {
+                    print!(" -- {help_text}")
+                }
+                println!("");
+            }
         }
 
         Ok(())
