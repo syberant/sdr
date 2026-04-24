@@ -22,6 +22,12 @@ impl Target {
     }
 }
 
+impl AsRef<std::path::Path> for Target {
+    fn as_ref(&self) -> &std::path::Path {
+        self.0.as_ref()
+    }
+}
+
 impl Target {
     pub fn cat(&self) -> Result<(), MyError> {
         let err = Command::new("cat").arg(&self.0).exec();
@@ -32,12 +38,44 @@ impl Target {
         ))
     }
 
+    pub fn create_new(&self, extra_path: impl AsRef<std::path::Path>) -> Result<(), MyError> {
+        let path = self.0.join(extra_path);
 
-    pub fn edit(&self) -> Result<(), MyError> {
+        match std::fs::File::create_new(&path) {
+            // File didn't exist yet and has been newly created.
+            // Fill it with a template
+            Ok(mut file) => {
+                use std::io::Write;
+
+                file.write_all(SCRIPT_TEMPLATE.as_bytes())?;
+
+                use std::os::unix::fs::PermissionsExt;
+
+                // chmod +x
+                let mut perms = file.metadata()?.permissions();
+                perms.set_mode(perms.mode() | 0o100);
+                file.set_permissions(perms)?;
+            }
+            Err(e) => match e.kind() {
+                // It already existed, this is usually the case and we don't have to do anything
+                std::io::ErrorKind::AlreadyExists => {}
+                _ => {
+                    return Err(e)
+                        .context(format!("Couldn't create new file `{}`", self.0.display()));
+                }
+            },
+        }
+
+        Self::edit(path)
+    }
+
+    pub fn edit(path: impl AsRef<std::path::Path>) -> Result<(), MyError> {
+        let path = path.as_ref();
+
         let editor = get_editor();
-        let err = Command::new(editor).arg(&self.0).exec();
+        let err = Command::new(editor).arg(&path).exec();
 
-        Err(err).context(format!("Failed to edit {}", self.0.display()))
+        Err(err).context(format!("Failed to edit {}", path.display()))
     }
 
     pub fn help(&self) -> Result<(), MyError> {

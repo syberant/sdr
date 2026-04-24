@@ -11,12 +11,12 @@ const BLUE_TEXT: &str = "\x1b[34m";
 const BRIGHT_YELLOW_TEXT: &str = "\x1b[93m";
 const DEFAULT_TEXT: &str = "\x1b[0m";
 
+const SCRIPT_TEMPLATE: &str = "#!/usr/bin/env bash\n\nset -euo pipefail\n";
+
 /// The action we are supposed to carry out.
 enum Action {
     Run,
     Help,
-    // TODO: Maybe merge this one into the functionality of the `--edit` flag?
-    New,
     Edit,
     Cat,
     Which,
@@ -141,7 +141,6 @@ fn main() -> Result<(), MyError> {
 
     let action = match args.peek().map(|s| s.as_encoded_bytes()) {
         Some(b"--help") => Action::Help,
-        Some(b"--new") => Action::New,
         Some(b"--edit") => Action::Edit,
         Some(b"--cat") => Action::Cat,
         Some(b"--which") => Action::Which,
@@ -159,14 +158,22 @@ fn main() -> Result<(), MyError> {
     match action {
         Action::Run => {
             if target.metadata().is_dir() {
+                if let Some(nonexistent) = args.next() {
+                    // FIXME: Allow creating a new nested script a la `mkdir -p`
+                    if args.peek() == Some(&OsString::from("--new")) {
+                        target.create_new(&nonexistent)?;
+
+                        return Ok(());
+                    } else {
+                        eprintln!(
+                            "\n`{}` doesn't exist, try creating it with the --new flag\n",
+                            nonexistent.to_string_lossy()
+                        );
+                    }
+                }
+
                 target.directory_help()?;
 
-                if let Some(nonexistent) = args.peek() {
-                    eprintln!(
-                        "\n`{}` doesn't exist, try creating it with the --new flag",
-                        nonexistent.to_string_lossy()
-                    );
-                }
                 Ok(())
             } else {
                 let err: MyError = target.exec(args).into();
@@ -176,14 +183,12 @@ fn main() -> Result<(), MyError> {
         }
         Action::Help => target.help(),
         Action::Cat => target.cat(),
-        Action::Edit => target.edit(),
+        Action::Edit => Target::edit(target),
         Action::Which => {
             println!("{}", target);
             Ok(())
         }
 
-        // TODO
-        Action::New => unimplemented!(),
         Action::Complete => {
             println!("{}", include_str!("../completion.sh"));
             Ok(())
