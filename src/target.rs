@@ -124,8 +124,7 @@ impl Target {
                 let name = dentry.file_name();
                 let name = name.to_string_lossy();
 
-                let metadata = dentry.metadata()?;
-                let ft = metadata.file_type();
+                let ft = dentry.metadata()?.file_type();
 
                 let mut help_text = get_help_file(dentry.path()).and_then(buf_read_line);
                 if ft.is_dir() {

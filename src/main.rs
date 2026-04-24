@@ -120,6 +120,7 @@ fn main() -> Result<(), MyError> {
     let mut args = args.peekable();
 
     let action = match args.peek().map(|s| s.as_encoded_bytes()) {
+        // TODO: Provide different help text for `sd --help` explaining all these flags.
         Some(b"--help") => Action::Help,
         Some(b"--edit") => Action::Edit,
         Some(b"--cat") => Action::Cat,
