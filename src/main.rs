@@ -13,6 +13,26 @@ const DEFAULT_TEXT: &str = "\x1b[0m";
 
 const SCRIPT_TEMPLATE: &str = "#!/usr/bin/env bash\n\nset -euo pipefail\n";
 
+fn user_friendly_panic_report(info: &std::panic::PanicHookInfo<'_>) {
+    eprintln!("{}\n", info);
+
+    let bt = std::backtrace::Backtrace::force_capture();
+    eprint!("Backtrace:\n{bt}");
+
+    eprint!(
+        "
+Sorry about that, this program appears to have run into a small spot of bother.
+
+I consider every `panic!` that happens to be a bug and you've found one!
+I'd be grateful if you were to open an issue at https://github.com/syberant/sdr and include:
+- the above panic message and backtrace
+- what you were trying to do/any relevant circumstances
+- operating system/distro (`grep -E '^(NAME|VERSION)=' /etc/os-release`)
+- kernel version (`uname -a`)
+"
+    );
+}
+
 /// The action we are supposed to carry out.
 enum Action {
     Run,
@@ -115,6 +135,8 @@ fn parse_target() -> Result<(Target, impl Iterator<Item = OsString>), MyError> {
 }
 
 fn main() -> Result<(), MyError> {
+    std::panic::set_hook(Box::new(user_friendly_panic_report));
+
     let (target, args) = parse_target()?;
 
     let mut args = args.peekable();
