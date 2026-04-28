@@ -140,29 +140,29 @@ fn main() -> Result<(), MyError> {
     let (target, args) = parse_target()?;
 
     let mut args = args.peekable();
+    let next_arg = args.peek().map(|s| s.as_encoded_bytes());
+    let arg_count = std::env::args_os().count();
 
-    let action = match args.peek().map(|s| s.as_encoded_bytes()) {
-        Some(b"--help") => {
-            // Provide different help text for `sd --help` explaining usage of script directory in general.
-            if std::env::args_os().count() <= 2 {
-                print!("{}", include_str!("../help"));
-                return Ok(());
-            }
-
-            Action::Help
+    let action = match (arg_count, next_arg) {
+        // These flags only work when there is only 1 argument.
+        (2, Some(b"--help")) => {
+            print!("{}", include_str!("../help"));
+            return Ok(());
         }
-        Some(b"--edit") => Action::Edit,
-        Some(b"--cat") => Action::Cat,
-        Some(b"--which") => Action::Which,
-        Some(b"--completion-bash") => Action::Complete,
+        (2, Some(b"--completion-bash")) => Action::Complete,
 
-        Some(b"--") => {
+        (_, Some(b"--help")) => Action::Help,
+        (_, Some(b"--edit")) => Action::Edit,
+        (_, Some(b"--cat")) => Action::Cat,
+        (_, Some(b"--which")) => Action::Which,
+
+        (_, Some(b"--")) => {
             // Passes all other arguments through to script.
             // Replaces the functionality of `--really`
             args.next();
             Action::Run
         }
-        None | Some(_) => Action::Run,
+        (_, None | Some(_)) => Action::Run,
     };
 
     match action {
