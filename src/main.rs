@@ -149,6 +149,14 @@ fn main() -> Result<(), MyError> {
             print!("{}", include_str!("../help"));
             return Ok(());
         }
+        (2, Some(b"--version")) => {
+            // Get version from cargo metadata at build time
+            // NOTE: Maybe git revision too? Requires a build script.
+            let version = option_env!("CARGO_PKG_VERSION")
+                .unwrap_or("? (not built by cargo, unknown version)");
+            println!("sdr v{}", version);
+            return Ok(());
+        }
         (2, Some(b"--completion-bash")) => Action::Complete,
 
         (_, Some(b"--help")) => Action::Help,
