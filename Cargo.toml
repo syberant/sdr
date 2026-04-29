@@ -1,6 +1,6 @@
 [package]
 name = "script-directory"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Organises and runs all your (oneliner) shellscripts"
 license = "EUPL-1.2"
