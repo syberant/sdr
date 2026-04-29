@@ -12,7 +12,8 @@ sd some path to a script -- --help and stuff
 sd some path to a script with plain arguments
 	Executes `~/sd/some/path/to/a/script with plain arguments`
 	`sd` figures out the difference between path and argument
-	simply by traversing the filesystem.
+	simply by traversing the filesystem tree.
+
 
 
 sd some path --help
@@ -31,6 +32,15 @@ sd path to a script --cat
 
 sd some path --which
 	Prints the full and canonicalized path to this script or directory.
+
+
+
+sd --help
+	What you're reading right now :)
+	Lists and explains all the flags the `sdr` binary itself understands.
+
+sd --version
+	Print version info to stdout.
 
 sd --completion-bash
 	Prints a completion script for bash, example usage:
