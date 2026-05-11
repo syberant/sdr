@@ -155,6 +155,19 @@ fn main() -> Result<(), MyError> {
             let version = option_env!("CARGO_PKG_VERSION")
                 .unwrap_or("? (not built by cargo, unknown version)");
             println!("sdr v{}", version);
+
+            println!("\nConfiguration options:");
+            // Modelled after format of `rustc --print cfg`
+            #[cfg(debug_assertions)]
+            println!("debug_assertions");
+            let panic_strategy =
+                cfg_select! { panic = "abort" => {"abort"} panic = "unwind" => {"unwind"} };
+            println!("panic=\"{panic_strategy}\"");
+            let target_family = cfg_select! { target_family = "wasm" => {"wasm"} windows => {"windows"} unix => {"unix"}};
+            println!("target_family=\"{target_family}\"");
+            #[cfg(target_feature = "crt-static")]
+            println!("target_feature=\"crt-static\"");
+
             return Ok(());
         }
         (2, Some(b"--completion-bash")) => Action::Complete,
